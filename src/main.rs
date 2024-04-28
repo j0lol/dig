@@ -5,7 +5,7 @@ fn hello_world() {
 }
 
 fn main() {
-    App::new().add_plugins((DefaultPlugins, HelloPlugin)).run();
+    App::new().add_plugins((DefaultPlugins, TilePlugin)).run();
 }
 
 #[derive(Component)]
@@ -50,4 +50,20 @@ impl Plugin for HelloPlugin {
             .add_systems(Startup, add_people)
             .add_systems(Update, (update_people, greet_people).chain());
     }
+}
+
+pub struct TilePlugin;
+
+impl Plugin for TilePlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(Startup, spawn_tiles);
+    }
+}
+
+fn spawn_tiles(mut commands: Commands, asset_server: Res<AssetServer>) {
+    commands.spawn(Camera2dBundle::default());
+    commands.spawn(SpriteBundle {
+        texture: asset_server.load("tile.png"),
+        ..default()
+    });
 }
