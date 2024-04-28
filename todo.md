@@ -1,1 +1,6 @@
-- Draw at a higher scale
+- Remove hello world boilerplate
+- Extract camera into own module
+- Make tile components
+- Add player component
+- Camera follows player
+- Player input (WASD)
