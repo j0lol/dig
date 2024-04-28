@@ -1,7 +1,6 @@
 use bevy::{math::I64Vec2, prelude::*, render::camera::ScalingMode};
 
 const TILE_PX: f32 = 8.;
-const PIXEL_SCALE: f32 = 1.;
 
 #[derive(Component)]
 struct Tile;
@@ -24,7 +23,7 @@ impl TileBundle {
             sprite_bundle: SpriteBundle {
                 transform: Transform {
                     translation: location.extend(0.0),
-                    scale: Vec2::splat(PIXEL_SCALE).extend(1.0),
+                    scale: Vec3::splat(1.0), // z component must be 1x scale in 2D
                     ..default()
                 },
                 texture: asset_server.load("tile.png"),
@@ -43,20 +42,8 @@ impl Plugin for TilePlugin {
 }
 
 fn spawn_tiles(mut commands: Commands, asset_server: Res<AssetServer>) {
-    let factor = TILE_PX * PIXEL_SCALE;
+    let factor = TILE_PX;
 
-    commands.spawn(Camera2dBundle {
-        projection: OrthographicProjection {
-            scale: 1./3.,
-            // scaling_mode: ScalingMode::AutoMin { min_width: 320., min_height: 240. },
-            far: 1000.,
-            near: -1000.,
-            ..default()
-        },
-        // projection: OrthographicProjection::default(),
-        ..default()
-    });
-    // commands.spawn(Camera2dBundle::default());
     for i in 0..32 {
         for j in 0..18 {
             commands.spawn(TileBundle::new(
