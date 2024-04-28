@@ -1,4 +1,3 @@
-- Extract camera into own module
 - Make tile components
 - Add player component
 - Camera follows player
