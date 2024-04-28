@@ -1,1 +1,1 @@
-- Draw a square sprite
+- Draw at a higher scale

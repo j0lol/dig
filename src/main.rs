@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+
 use grid::TilePlugin;
 mod grid;
 fn hello_world() {
@@ -6,7 +7,7 @@ fn hello_world() {
 }
 
 fn main() {
-    App::new().add_plugins((DefaultPlugins, TilePlugin)).run();
+    App::new().add_plugins((DefaultPlugins.set(ImagePlugin::default_nearest()), TilePlugin)).run();
 }
 
 #[derive(Component)]
