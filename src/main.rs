@@ -2,10 +2,19 @@ use bevy::prelude::*;
 
 mod grid;
 use grid::TilePlugin;
+mod player;
 use camera::CameraPlugin;
+use player::PlayerPlugin;
 
 fn main() {
-    App::new().add_plugins((DefaultPlugins.set(ImagePlugin::default_nearest()), CameraPlugin, TilePlugin)).run();
+    let plugins =
+        (
+            DefaultPlugins.set(ImagePlugin::default_nearest()),
+            CameraPlugin,
+            TilePlugin,
+            PlayerPlugin
+        );
+    App::new().add_plugins(plugins).run();
 }
 
 mod camera {

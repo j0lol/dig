@@ -3,12 +3,11 @@ use bevy::{math::I64Vec2, prelude::*, render::camera::ScalingMode};
 const TILE_PX: f32 = 8.;
 
 #[derive(Component)]
-struct Tile;
-
+pub struct Tile;
 
 #[derive(Component)]
-struct GridPos {
-    pos: I64Vec2,
+pub struct GridPos {
+    pub pos: I64Vec2,
 }
 
 #[derive(Bundle)]
