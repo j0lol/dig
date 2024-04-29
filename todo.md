@@ -1,3 +1,1 @@
-- Add player component
-- Camera follows player
 - Player input (WASD)
