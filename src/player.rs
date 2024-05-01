@@ -1,9 +1,9 @@
-use bevy::{math::I64Vec2, prelude::*};
+use bevy::{math::{vec2, I64Vec2}, prelude::*};
 
 use crate::{camera::CameraMarker, grid::GridPos};
 
 #[derive(Component, Default)]
-struct Player;
+pub struct Player;
 
 #[derive(Bundle, Default)]
 struct PlayerBundle {
@@ -14,11 +14,11 @@ struct PlayerBundle {
 }
 
 #[derive(Component, Default)]
-struct SubGridPos(Vec2);
+pub struct SubGridPos(pub Vec2);
 
 #[derive(Component, Default)]
-struct Physics {
-    velocity: Vec2,
+pub struct Physics {
+    pub velocity: Vec2,
 }
 
 impl PlayerBundle {
@@ -65,15 +65,18 @@ const MAX_VELOCITY: f32 = 2.;
 fn movement(mut player: Query<(&mut Transform, &mut Physics, &mut SubGridPos), With<Player>>, keys: Res<ButtonInput<KeyCode>>) {
     let Ok((mut transform, mut physics, mut pos)) = player.get_single_mut() else { return };
 
-    let acceleration = if keys.pressed(KeyCode::KeyD) {
+    let mut acceleration = if keys.pressed(KeyCode::KeyD) {
         Vec2::X * 0.1
     } else if keys.pressed(KeyCode::KeyA) {
         Vec2::NEG_X * 0.1
     } else {
         Vec2::ZERO
     };
+    if keys.just_pressed(KeyCode::Space) {
+        acceleration += Vec2::Y * 10.
+    }
 
-    physics.velocity.x = (physics.velocity.x + acceleration.x).clamp(-MAX_VELOCITY, MAX_VELOCITY);
+    physics.velocity = (physics.velocity + acceleration).clamp(vec2(-MAX_VELOCITY, -MAX_VELOCITY), vec2(MAX_VELOCITY, MAX_VELOCITY));
 
     if physics.velocity.x != 0.0 {
         let positive = physics.velocity.x.is_sign_positive();
@@ -85,7 +88,16 @@ fn movement(mut player: Query<(&mut Transform, &mut Physics, &mut SubGridPos), W
             physics.velocity.x = 0.;
         }
     }
+    if physics.velocity.y != 0.0 {
+        let positive = physics.velocity.y.is_sign_positive();
+        let friction = if positive { -FRICTION } else { FRICTION };
+        physics.velocity.y += friction;
 
+        // snapping force
+        if physics.velocity.y.abs() < FRICTION && acceleration.y == 0.0 {
+            physics.velocity.y = 0.;
+        }
+    }
 
     dbg!(acceleration.x);
     dbg!(physics.velocity.x);
