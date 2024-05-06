@@ -92,14 +92,17 @@ fn center_camera_on_player(mut camera: Query<(&mut CameraMarker, &mut Transform)
 const FRICTION: f32 = 0.05;
 const MAX_VELOCITY: f32 = 2.;
 
-fn movement(mut player: Query<(&mut Transform, &mut Physics, &mut SubGridPos), With<Player>>, keys: Res<ButtonInput<KeyCode>>) {
-    let Ok((mut transform, mut physics, mut pos)) = player.get_single_mut() else { return };
+fn movement(mut player: Query<(&mut Transform, &mut Physics, &mut SubGridPos, &mut TextureAtlas), With<Player>>, keys: Res<ButtonInput<KeyCode>>) {
+    let Ok((mut transform, mut physics, mut pos, mut atlas)) = player.get_single_mut() else { return };
 
     let mut acceleration = if keys.pressed(KeyCode::KeyD) {
+        atlas.index = 7;
         Vec2::X * 0.1
     } else if keys.pressed(KeyCode::KeyA) {
+        atlas.index = 13;
         Vec2::NEG_X * 0.1
     } else {
+        atlas.index = 1;
         Vec2::ZERO
     };
     if keys.just_pressed(KeyCode::Space) {
@@ -128,12 +131,6 @@ fn movement(mut player: Query<(&mut Transform, &mut Physics, &mut SubGridPos), W
             physics.velocity.y = 0.;
         }
     }
-
-    dbg!(acceleration.x);
-    dbg!(physics.velocity.x);
-
     pos.0 += physics.velocity;
-
-    dbg!(pos.0);
     transform.translation = pos.0.round().extend(0.)
 }

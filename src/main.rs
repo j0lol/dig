@@ -31,7 +31,7 @@ impl FromWorld for SpriteSheet {
         let texture_atlas = TextureAtlasLayout::from_grid(
             Vec2::new(8.0, 8.0), // The size of each image
             6, // The number of columns
-            1, // The number of rows
+            3, // The number of rows
             None, // Padding
             None // Offset
         );

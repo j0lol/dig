@@ -12,7 +12,7 @@ pub struct Cursor;
 
 #[derive(Component, Default)]
 pub struct GridPos {
-    pub pos: I64Vec2,
+    pub pos: IVec2,
 }
 
 #[derive(Bundle, Default)]
@@ -24,22 +24,18 @@ struct TileBundle {
 }
 
 impl TileBundle {
-    fn new(location: I64Vec2, asset_server: &Res<AssetServer>, texture_atlas_layout: &Handle<TextureAtlasLayout>) -> TileBundle {
-        let texture = asset_server.load("tileset.png");
+    fn new(location: IVec2, asset_server: &AssetServer, sprite_sheet: &SpriteSheet) -> TileBundle {
 
         TileBundle {
             grid_pos: GridPos { pos: location },
             sprite_bundle: SpriteSheetBundle {
                 transform: Transform {
-                    translation: (location.as_ivec2() * 8).extend(0).as_vec3(),
+                    translation: (location * 8).extend(0).as_vec3(),
                     scale: Vec3::splat(1.0), // z component must be 1x scale in 2D
                     ..default()
                 },
-                texture,
-                atlas: TextureAtlas {
-                    layout: texture_atlas_layout.clone(),
-                    index: 1,
-                },
+                texture: asset_server.load("tileset.png"),
+                atlas: TextureAtlas { layout: sprite_sheet.0.clone(), index: 2 },
                 ..default()
             },
             ..Default::default()
@@ -52,7 +48,7 @@ pub struct TilePlugin;
 impl Plugin for TilePlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, (spawn_tiles, spawn_cursor))
-            .add_systems(Update, update_cursor);
+            .add_systems(Update, (update_cursor, tile_interact).chain());
     }
 }
 
@@ -62,28 +58,16 @@ fn spawn_tiles(mut commands: Commands, sprite_sheet: Res<SpriteSheet>, asset_ser
 
     for i in -32..=32 {
         for j in -18..=0 {
-            let location = I64Vec2::new(i, j);
+            let location = IVec2::new(i, j);
             commands.spawn(
-                TileBundle {
-                grid_pos: GridPos { pos: location },
-                sprite_bundle: SpriteSheetBundle {
-                    transform: Transform {
-                        translation: (location.as_ivec2() * 8).extend(0).as_vec3(),
-                        scale: Vec3::splat(1.0), // z component must be 1x scale in 2D
-                        ..default()
-                    },
-                    texture: asset_server.load("tileset.png"),
-                    atlas: TextureAtlas { layout: sprite_sheet.0.clone(), index: 2 },
-                    ..default()
-                },
-                ..Default::default()
-            });
+                TileBundle::new(location, &asset_server, &sprite_sheet)
+            );
         }
     }
 }
 
 fn spawn_cursor(mut commands: Commands, asset_server: Res<AssetServer>, sprite_sheet: Res<SpriteSheet>) {
-    commands.spawn((Cursor, SpriteSheetBundle {
+    commands.spawn((Cursor, GridPos::default(), SpriteSheetBundle {
         transform: Transform {
             translation: Vec2::new(0.,0.).extend(0.),
             scale: Vec3::splat(1.0), // z component must be 1x scale in 2D
@@ -96,7 +80,7 @@ fn spawn_cursor(mut commands: Commands, asset_server: Res<AssetServer>, sprite_s
 }
 
 fn update_cursor(
-    mut tile_cursor: Query<&mut Transform, With<Cursor>>,
+    mut tile_cursor: Query<(&mut Transform, &mut GridPos), With<Cursor>>,
     // query to get the window (so we can read the current cursor position)
     q_window: Query<&Window, With<PrimaryWindow>>,
     // query to get camera transform
@@ -109,7 +93,7 @@ fn update_cursor(
     // There is only one primary window, so we can similarly get it from the query:
     let window = q_window.single();
 
-    let mut tile_cursor_pos = tile_cursor.single_mut();
+    let (mut tile_cursor_pos, mut pos) = tile_cursor.single_mut();
 
     // check if the cursor is inside the window and get its position
     // then, ask bevy to convert into world coordinates, and truncate to discard Z
@@ -118,10 +102,41 @@ fn update_cursor(
         .map(|ray| ray.origin.truncate())
     {
         tile_cursor_pos.translation = snap_to_grid(world_position).extend(10.);
-        eprintln!("World coords: {}/{}", world_position.x, world_position.y);
+        pos.pos = world_to_tile_coordinate(world_position);
     }
 }
 
+fn tile_interact(
+    mut commands: Commands,
+    tiles: Query<(Entity, &GridPos), With<Tile>>,
+    cursor: Query<&GridPos, With<Cursor>>,
+    buttons: Res<ButtonInput<MouseButton>>,
+    asset_server: Res<AssetServer>,
+    sprite_sheet: Res<SpriteSheet>
+) {
+    if buttons.all_pressed([MouseButton::Left, MouseButton::Right]) {
+        return
+    }
+    let cursor_pos = cursor.single();
+
+    if buttons.pressed(MouseButton::Left) {
+        for (entity, pos) in tiles.iter() {
+            if pos.pos == cursor_pos.pos {
+                commands.entity(entity).despawn()
+            }
+        }
+    }
+    if buttons.pressed(MouseButton::Right) {
+        let tile_at_cursor = tiles.iter().any(|(_, pos)| pos.pos == cursor_pos.pos);
+        if !tile_at_cursor {
+            commands.spawn(
+                TileBundle::new(cursor_pos.pos, &asset_server, &sprite_sheet)
+            );
+        }
+    }
+
+
+}
 fn world_to_tile_coordinate(world_pos: Vec2) -> IVec2 {
     let vec2 = world_pos / TILE_PX;
     vec2.round().as_ivec2()
