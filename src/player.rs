@@ -1,13 +1,13 @@
 use bevy::{math::{vec2, I64Vec2}, prelude::*};
 
-use crate::{camera::CameraMarker, grid::GridPos};
+use crate::{camera::CameraMarker, grid::GridPos, SpriteSheet};
 
 #[derive(Component, Default)]
 pub struct Player;
 
 #[derive(Bundle, Default)]
 struct PlayerBundle {
-    sprite_bundle: SpriteBundle,
+    sprite_bundle: SpriteSheetBundle,
     pos: SubGridPos,
     player: Player,
     physics: Physics,
@@ -22,16 +22,28 @@ pub struct Physics {
 }
 
 impl PlayerBundle {
-    fn new(location: I64Vec2, asset_server: &Res<AssetServer>) -> PlayerBundle {
+    fn new(
+        location: I64Vec2,
+        asset_server: &Res<AssetServer>,
+        mut texture_atlas_layouts: &mut ResMut<Assets<TextureAtlasLayout>>,
+    ) -> PlayerBundle {
+        let texture = asset_server.load("tileset.png");
+        let layout = TextureAtlasLayout::from_grid(Vec2::new(8.0, 8.0), 6, 1, None, None);
+        let texture_atlas_layout = texture_atlas_layouts.add(layout);
+
         PlayerBundle {
             pos: SubGridPos(location.as_vec2()),
-            sprite_bundle: SpriteBundle {
+            sprite_bundle: SpriteSheetBundle {
                 transform: Transform {
                     translation: location.extend(0).as_vec3(),
                     scale: Vec3::splat(1.0), // z component must be 1x scale in 2D
                     ..default()
                 },
-                texture: asset_server.load("creature.png"),
+                texture,
+                atlas: TextureAtlas {
+                    layout: texture_atlas_layout,
+                    index: 2,
+                },
                 ..default()
             },
             ..default()
@@ -48,8 +60,26 @@ impl Plugin for PlayerPlugin {
     }
 }
 
-fn spawn_player(mut commands: Commands, asset_server: Res<AssetServer>) {
-    commands.spawn(PlayerBundle::new(I64Vec2::new(0, 8), &asset_server));
+fn spawn_player(mut commands: Commands, asset_server: Res<AssetServer>, sprite_sheet: Res<SpriteSheet>) {
+    let texture = asset_server.load("tileset.png");
+    let location = IVec2::new(0, 8);
+    commands.spawn(
+        PlayerBundle {
+            pos: SubGridPos(location.as_vec2()),
+            sprite_bundle: SpriteSheetBundle {
+                transform: Transform {
+                    translation: location.extend(0).as_vec3(),
+                    scale: Vec3::splat(1.0), // z component must be 1x scale in 2D
+                    ..default()
+                },
+                texture,
+                atlas: TextureAtlas { layout: sprite_sheet.0.clone(), index: 1 },
+                ..default()
+            },
+            ..default()
+        }
+
+    );
 }
 
 fn center_camera_on_player(mut camera: Query<(&mut CameraMarker, &mut Transform), Without<Player>>, player: Query<&Transform, With<Player>>) {
