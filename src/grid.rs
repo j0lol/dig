@@ -1,8 +1,14 @@
-use bevy::{math::I64Vec2, prelude::*, render::camera::ScalingMode, window::PrimaryWindow};
+use bevy::{prelude::*, window::PrimaryWindow};
 
 use crate::SpriteSheet;
 
-const TILE_PX: f32 = 8.;
+pub const TILE_PX: i32 = 16;
+pub const TILE_PX_FLT: f32 = TILE_PX as f32;
+
+pub enum TileDirection {
+    CENTER = 9,
+    TOP = 1
+}
 
 #[derive(Component, Default)]
 pub struct Tile;
@@ -24,18 +30,18 @@ struct TileBundle {
 }
 
 impl TileBundle {
-    fn new(location: IVec2, asset_server: &AssetServer, sprite_sheet: &SpriteSheet) -> TileBundle {
+    fn new(location: IVec2, asset_server: &AssetServer, sprite_sheet: &SpriteSheet, direction: TileDirection) -> TileBundle {
 
         TileBundle {
             grid_pos: GridPos { pos: location },
             sprite_bundle: SpriteSheetBundle {
                 transform: Transform {
-                    translation: (location * 8).extend(0).as_vec3(),
+                    translation: (location * TILE_PX).extend(0).as_vec3(),
                     scale: Vec3::splat(1.0), // z component must be 1x scale in 2D
                     ..default()
                 },
                 texture: asset_server.load("tileset.png"),
-                atlas: TextureAtlas { layout: sprite_sheet.0.clone(), index: 2 },
+                atlas: TextureAtlas { layout: sprite_sheet.0.clone(), index: direction as usize },
                 ..default()
             },
             ..Default::default()
@@ -53,14 +59,17 @@ impl Plugin for TilePlugin {
 }
 
 fn spawn_tiles(mut commands: Commands, sprite_sheet: Res<SpriteSheet>, asset_server: Res<AssetServer>) {
-    // let texture = asset_server.load("tileset.png").clone_weak();
-
-
-    for i in -32..=32 {
-        for j in -18..=0 {
+    for i in -64..=64 {
+        let location = IVec2::new(i, 0);
+        commands.spawn(
+            TileBundle::new(location, &asset_server, &sprite_sheet, TileDirection::TOP)
+        );
+    }
+    for i in -64..=64 {
+        for j in -64..=-1 {
             let location = IVec2::new(i, j);
             commands.spawn(
-                TileBundle::new(location, &asset_server, &sprite_sheet)
+                TileBundle::new(location, &asset_server, &sprite_sheet, TileDirection::CENTER)
             );
         }
     }
@@ -74,16 +83,14 @@ fn spawn_cursor(mut commands: Commands, asset_server: Res<AssetServer>, sprite_s
             ..default()
         },
         texture: asset_server.load("tileset.png"),
-        atlas: TextureAtlas { layout: sprite_sheet.0.clone(), index: 0 },
+        atlas: TextureAtlas { layout: sprite_sheet.0.clone(), index: 4 },
         ..default()
     }));
 }
 
 fn update_cursor(
     mut tile_cursor: Query<(&mut Transform, &mut GridPos), With<Cursor>>,
-    // query to get the window (so we can read the current cursor position)
     q_window: Query<&Window, With<PrimaryWindow>>,
-    // query to get camera transform
     q_camera: Query<(&Camera, &GlobalTransform), With<crate::camera::CameraMarker>>
 ) {
     // get the camera info and transform
@@ -130,20 +137,19 @@ fn tile_interact(
         let tile_at_cursor = tiles.iter().any(|(_, pos)| pos.pos == cursor_pos.pos);
         if !tile_at_cursor {
             commands.spawn(
-                TileBundle::new(cursor_pos.pos, &asset_server, &sprite_sheet)
+                TileBundle::new(cursor_pos.pos, &asset_server, &sprite_sheet, TileDirection::CENTER)
             );
         }
     }
-
-
 }
+
 fn world_to_tile_coordinate(world_pos: Vec2) -> IVec2 {
-    let vec2 = world_pos / TILE_PX;
+    let vec2 = world_pos / TILE_PX_FLT;
     vec2.round().as_ivec2()
 }
 
 fn tile_to_world_coordinate(tile_pos: IVec2) -> Vec2 {
-    let ivec2 = tile_pos*(TILE_PX as i32);
+    let ivec2 = tile_pos*TILE_PX;
     ivec2.as_vec2()
 }
 fn snap_to_grid(pos: Vec2) -> Vec2 {

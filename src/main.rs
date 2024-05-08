@@ -3,7 +3,7 @@ mod player;
 mod gravity;
 mod camera;
 use bevy::prelude::*;
-use grid::TilePlugin;
+use grid::{TilePlugin, TILE_PX_FLT};
 use camera::CameraPlugin;
 use player::PlayerPlugin;
 use gravity::GravityPlugin;
@@ -29,9 +29,9 @@ struct SpriteSheet(Handle<TextureAtlasLayout>);
 impl FromWorld for SpriteSheet {
     fn from_world(world: &mut World) -> Self {
         let texture_atlas = TextureAtlasLayout::from_grid(
-            Vec2::new(8.0, 8.0), // The size of each image
-            6, // The number of columns
-            3, // The number of rows
+            Vec2::new(TILE_PX_FLT, TILE_PX_FLT), // The size of each image
+            8, // The number of columns
+            8, // The number of rows
             None, // Padding
             None // Offset
         );

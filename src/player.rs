@@ -62,7 +62,7 @@ impl Plugin for PlayerPlugin {
 
 fn spawn_player(mut commands: Commands, asset_server: Res<AssetServer>, sprite_sheet: Res<SpriteSheet>) {
     let texture = asset_server.load("tileset.png");
-    let location = IVec2::new(0, 8);
+    let location = IVec2::new(0, 16);
     commands.spawn(
         PlayerBundle {
             pos: SubGridPos(location.as_vec2()),
@@ -73,7 +73,7 @@ fn spawn_player(mut commands: Commands, asset_server: Res<AssetServer>, sprite_s
                     ..default()
                 },
                 texture,
-                atlas: TextureAtlas { layout: sprite_sheet.0.clone(), index: 1 },
+                atlas: TextureAtlas { layout: sprite_sheet.0.clone(), index: 12 },
                 ..default()
             },
             ..default()
@@ -96,13 +96,13 @@ fn movement(mut player: Query<(&mut Transform, &mut Physics, &mut SubGridPos, &m
     let Ok((mut transform, mut physics, mut pos, mut atlas)) = player.get_single_mut() else { return };
 
     let mut acceleration = if keys.pressed(KeyCode::KeyD) {
-        atlas.index = 7;
+        atlas.index = 13;
         Vec2::X * 0.1
     } else if keys.pressed(KeyCode::KeyA) {
-        atlas.index = 13;
+        atlas.index = 11;
         Vec2::NEG_X * 0.1
     } else {
-        atlas.index = 1;
+        atlas.index = 12;
         Vec2::ZERO
     };
     if keys.just_pressed(KeyCode::Space) {

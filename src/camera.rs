@@ -17,7 +17,7 @@ impl Plugin for CameraPlugin {
 fn spawn(mut commands: Commands) {
     commands.spawn((Camera2dBundle {
         projection: OrthographicProjection {
-            scale: 1./3.,
+            scale: 1./2.,
             // scaling_mode: ScalingMode::AutoMin { min_width: 320., min_height: 240. },
             far: 1000.,
             near: -1000.,  // 2d boilerplate
