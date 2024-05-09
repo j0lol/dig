@@ -1,5 +1,5 @@
 use bevy::{prelude::*, window::PrimaryWindow};
-
+use bevy_rapier2d::prelude::*;
 use crate::SpriteSheet;
 
 pub const TILE_PX: i32 = 16;
@@ -16,13 +16,31 @@ pub struct Tile;
 #[derive(Component)]
 pub struct Cursor;
 
-#[derive(Component, Default)]
-pub struct GridPos {
-    pub pos: IVec2,
+#[derive(Component, Default, Clone, Copy)]
+pub struct GridPos(IVec2);
+
+#[derive(Component, Default, Clone, Copy)]
+pub struct WorldPos(Vec2);
+
+impl GridPos {
+    pub fn as_world(&self) -> WorldPos {
+        let ivec2 = self.0*TILE_PX;
+        WorldPos(ivec2.as_vec2())
+    }
+}
+impl WorldPos {
+    pub fn as_grid(&self) -> GridPos {
+        let vec2 = self.0 / TILE_PX_FLT;
+        GridPos(vec2.round().as_ivec2())
+    }
+    pub fn grid_snap(&self) -> Self {
+        return self.as_grid().as_world()
+    }
 }
 
 #[derive(Bundle, Default)]
 struct TileBundle {
+    collider: Collider,
     sprite_bundle: SpriteSheetBundle,
     grid_pos: GridPos,
     tile: Tile,
@@ -30,13 +48,14 @@ struct TileBundle {
 }
 
 impl TileBundle {
-    fn new(location: IVec2, asset_server: &AssetServer, sprite_sheet: &SpriteSheet, direction: TileDirection) -> TileBundle {
+    fn new(pos: GridPos, asset_server: &AssetServer, sprite_sheet: &SpriteSheet, direction: TileDirection) -> TileBundle {
 
         TileBundle {
-            grid_pos: GridPos { pos: location },
+            collider: Collider::cuboid(TILE_PX_FLT/2., TILE_PX_FLT/2.),
+            grid_pos: pos,
             sprite_bundle: SpriteSheetBundle {
                 transform: Transform {
-                    translation: (location * TILE_PX).extend(0).as_vec3(),
+                    translation: pos.as_world().0.extend(0.),
                     scale: Vec3::splat(1.0), // z component must be 1x scale in 2D
                     ..default()
                 },
@@ -60,14 +79,14 @@ impl Plugin for TilePlugin {
 
 fn spawn_tiles(mut commands: Commands, sprite_sheet: Res<SpriteSheet>, asset_server: Res<AssetServer>) {
     for i in -64..=64 {
-        let location = IVec2::new(i, 0);
+        let location = GridPos(IVec2::new(i, 0));
         commands.spawn(
             TileBundle::new(location, &asset_server, &sprite_sheet, TileDirection::TOP)
         );
     }
     for i in -64..=64 {
         for j in -64..=-1 {
-            let location = IVec2::new(i, j);
+            let location = GridPos(IVec2::new(i, j));
             commands.spawn(
                 TileBundle::new(location, &asset_server, &sprite_sheet, TileDirection::CENTER)
             );
@@ -108,8 +127,9 @@ fn update_cursor(
         .and_then(|cursor| camera.viewport_to_world(camera_transform, cursor))
         .map(|ray| ray.origin.truncate())
     {
-        tile_cursor_pos.translation = snap_to_grid(world_position).extend(10.);
-        pos.pos = world_to_tile_coordinate(world_position);
+        let world_position = WorldPos(world_position);
+        tile_cursor_pos.translation = world_position.grid_snap().0.extend(10.);
+        pos.0 = world_position.as_grid().0;
     }
 }
 
@@ -128,30 +148,17 @@ fn tile_interact(
 
     if buttons.pressed(MouseButton::Left) {
         for (entity, pos) in tiles.iter() {
-            if pos.pos == cursor_pos.pos {
+            if pos.0 == cursor_pos.0 {
                 commands.entity(entity).despawn()
             }
         }
     }
     if buttons.pressed(MouseButton::Right) {
-        let tile_at_cursor = tiles.iter().any(|(_, pos)| pos.pos == cursor_pos.pos);
+        let tile_at_cursor = tiles.iter().any(|(_, pos)| pos.0 == cursor_pos.0);
         if !tile_at_cursor {
             commands.spawn(
-                TileBundle::new(cursor_pos.pos, &asset_server, &sprite_sheet, TileDirection::CENTER)
+                TileBundle::new(*cursor_pos, &asset_server, &sprite_sheet, TileDirection::CENTER)
             );
         }
     }
-}
-
-fn world_to_tile_coordinate(world_pos: Vec2) -> IVec2 {
-    let vec2 = world_pos / TILE_PX_FLT;
-    vec2.round().as_ivec2()
-}
-
-fn tile_to_world_coordinate(tile_pos: IVec2) -> Vec2 {
-    let ivec2 = tile_pos*TILE_PX;
-    ivec2.as_vec2()
-}
-fn snap_to_grid(pos: Vec2) -> Vec2 {
-    return tile_to_world_coordinate(world_to_tile_coordinate(pos))
 }

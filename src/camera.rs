@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-const BG_COLOR: Color = Color::rgb(62./255., 4./255., 45./255.);
+const _BG_COLOR: Color = Color::rgb(62./255., 4./255., 45./255.);
 pub struct CameraPlugin;
 
 #[derive(Component)]

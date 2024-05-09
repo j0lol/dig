@@ -3,6 +3,7 @@ mod player;
 mod gravity;
 mod camera;
 use bevy::prelude::*;
+use bevy_rapier2d::prelude::*;
 use grid::{TilePlugin, TILE_PX_FLT};
 use camera::CameraPlugin;
 use player::PlayerPlugin;
@@ -12,6 +13,8 @@ fn main() {
     let plugins =
         (
             DefaultPlugins.set(ImagePlugin::default_nearest()),
+            RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(TILE_PX_FLT),
+            RapierDebugRenderPlugin::default(),
             CameraPlugin,
             TilePlugin,
             PlayerPlugin,

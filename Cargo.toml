@@ -6,6 +6,7 @@ edition = "2021"
 
 [dependencies]
 bevy = { version = "0.13.2", features = ["dynamic_linking"] }
+bevy_rapier2d = { version = "0.26.0", features = ["debug-render-2d"] }
 
 # NOTE: For maximum performance, build using a nightly compiler
 # If you are using rust stable, remove the "-Zshare-generics=y" below.

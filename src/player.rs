@@ -1,12 +1,13 @@
-use bevy::{math::{vec2, I64Vec2}, prelude::*};
-
-use crate::{camera::CameraMarker, grid::GridPos, SpriteSheet};
+use bevy::{math::vec2, prelude::*};
+use bevy_rapier2d::prelude::*;
+use crate::{camera::CameraMarker, SpriteSheet};
 
 #[derive(Component, Default)]
 pub struct Player;
 
 #[derive(Bundle, Default)]
 struct PlayerBundle {
+    collider: Collider,
     sprite_bundle: SpriteSheetBundle,
     pos: SubGridPos,
     player: Player,
@@ -21,35 +22,6 @@ pub struct Physics {
     pub velocity: Vec2,
 }
 
-impl PlayerBundle {
-    fn new(
-        location: I64Vec2,
-        asset_server: &Res<AssetServer>,
-        mut texture_atlas_layouts: &mut ResMut<Assets<TextureAtlasLayout>>,
-    ) -> PlayerBundle {
-        let texture = asset_server.load("tileset.png");
-        let layout = TextureAtlasLayout::from_grid(Vec2::new(8.0, 8.0), 6, 1, None, None);
-        let texture_atlas_layout = texture_atlas_layouts.add(layout);
-
-        PlayerBundle {
-            pos: SubGridPos(location.as_vec2()),
-            sprite_bundle: SpriteSheetBundle {
-                transform: Transform {
-                    translation: location.extend(0).as_vec3(),
-                    scale: Vec3::splat(1.0), // z component must be 1x scale in 2D
-                    ..default()
-                },
-                texture,
-                atlas: TextureAtlas {
-                    layout: texture_atlas_layout,
-                    index: 2,
-                },
-                ..default()
-            },
-            ..default()
-        }
-    }
-}
 pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
@@ -65,6 +37,7 @@ fn spawn_player(mut commands: Commands, asset_server: Res<AssetServer>, sprite_s
     let location = IVec2::new(0, 16);
     commands.spawn(
         PlayerBundle {
+            collider: Collider::cuboid(6., 8.),
             pos: SubGridPos(location.as_vec2()),
             sprite_bundle: SpriteSheetBundle {
                 transform: Transform {
@@ -84,7 +57,7 @@ fn spawn_player(mut commands: Commands, asset_server: Res<AssetServer>, sprite_s
 
 fn center_camera_on_player(mut camera: Query<(&mut CameraMarker, &mut Transform), Without<Player>>, player: Query<&Transform, With<Player>>) {
     let Ok(player) = player.get_single() else { return };
-    let Ok((mut camera, mut camera_transform)) = camera.get_single_mut() else { return };
+    let Ok((mut _camera, mut camera_transform)) = camera.get_single_mut() else { return };
 
     camera_transform.translation = player.translation;
 }
